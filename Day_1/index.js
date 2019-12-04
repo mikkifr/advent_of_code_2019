@@ -4,8 +4,7 @@ const input = fs.readFileSync(path.join(__dirname, 'input.txt'), 'utf8')
 
 /************************************* */
 
-const requiredFuel = input
-  .trim()
+const result = input
   .split('\n')
   .map(
     mass => [mass]
@@ -15,4 +14,4 @@ const requiredFuel = input
   )
   .reduce((sum, [fuel]) => sum + fuel, 0)
 
-console.log(requiredFuel)
+console.log(result)
