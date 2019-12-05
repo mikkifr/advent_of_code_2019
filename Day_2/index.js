@@ -31,5 +31,8 @@ const findPairs = (val) => {
 
 const pairs = findPairs(19690720);
 
-console.log(run(12,2));
-console.log(100 * pairs[0] + pairs[1]);
+const part_1 = run(12,2);
+const part_2 = 100 * pairs[0] + pairs[1];
+
+console.log(part_1);
+console.log(part_2);
