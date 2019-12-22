@@ -1,60 +1,91 @@
 const fs = require('fs');
-const path = require('path');
-const input = fs.readFileSync(path.join(__dirname, 'input.txt'), 'utf8');
+const path = require('path')
+const input = fs.readFileSync(path.join(__dirname, 'input.txt'), 'utf8')
 
 /************************************* */
-const [a, b] = input.split('\n').map(i => i.split(','));
+
+const [pathsA, pathsB] = input.split('\n').map(i => i.split(','))
 
 const sortPairs = (a, b) => (a[0] < b[0] || a[1] < b[1]) && -1 || 1;
 
-const findCoordinates = (points) => {
-  const coords = [[0, 0]];
+const within = (val, min, max) => val > min && val < max;
 
-  for(let i = 0; i < points.length; i++) {
-    const dir = points[i][0];
-    const distance = +points[i].slice(1,4);
-    const coord = [...coords[coords.length - 1]];
+const getPositions = (path) => {
+  const positions = [[[0, 0], 0]];
 
-    if(dir === "U") coord[1] += distance;
-    if(dir === "D") coord[1] -= distance;
-    if(dir === "L") coord[0] -= distance;
-    if(dir === "R") coord[0] += distance;
+  for(let i = 0, steps = 0; i < path.length; i++) {
+    const dir = path[i][0];
+    const distance = +path[i].slice(1,4);
+    const newPosition = [...positions[positions.length - 1][0]];
 
-    coords.push(coord);
+    if(dir === "U") newPosition[1] += distance;
+    if(dir === "D") newPosition[1] -= distance;
+    if(dir === "L") newPosition[0] -= distance;
+    if(dir === "R") newPosition[0] += distance;
+
+    steps += distance;
+    positions.push([newPosition, steps]);
   }
 
-  return coords;
+  return positions;
 }
 
-const coordsA = findCoordinates(a);
-const coordsB = findCoordinates(b);
+const intersects = (startA, endA, startB, endB) => {
+  const [a1, a2] = [startA, endA].concat().sort(sortPairs);
+  const [b1, b2] = [startB, endB].concat().sort(sortPairs);
 
-const distances = [];
+  const intersectX = within(a1[0], b1[0], b2[0]) || within(b1[0], a1[0], a2[0]);
+  const intersectY = within(a1[1], b1[1], b2[1]) || within(b1[1], a1[1], a2[1]);
 
-for(let i = 0; i < coordsA.length - 1; i++) {
-  for(n = 0; n < coordsB.length - 1; n++) {
-    const p = [coordsA[i], coordsA[i + 1]];
-    const q = [coordsB[n], coordsB[n + 1]];
+  return intersectX && intersectY;
+}
 
-    const [p1, p2] = p.sort(sortPairs);
-    const [q1, q2] = q.sort(sortPairs);
+const getIntersections = (pathA, pathB) => {
+  const positionsA = getPositions(pathsA);
+  const positionsB = getPositions(pathsB);
 
-    const intersectX =
-      ((p1[0] === p2[0]) && (p1[0] > q1[0]) && (p1[0] < q2[0])) ||
-      ((q1[0] === q2[0]) && (q1[0] > p1[0]) && (q1[0] < p2[0]));
+  const results = [];
 
-    const intersectY =
-      ((p1[1] === p2[1]) && (p1[1] > q1[1]) && (p1[1] < q2[1])) ||
-      ((q1[1] === q2[1]) && (q1[1] > p1[1]) && (q1[1] < p2[1]));
+  for(let i = 0; i < positionsA.length - 1; i++) {
+    const startPosA = positionsA[i][0];
+    const endPosA = positionsA[i + 1][0];
 
-    if(intersectX && intersectY) {
-      const x = p1[0] === p2[0] ? p1[0] : q1[0];
-      const y = p1[1] === p2[1] ? p1[1] : q1[1];
-      distances.push(Math.abs(x) + Math.abs(y));
+    for(n = 0; n < positionsB.length - 1; n++) {
+      const startPosB = positionsB[n][0];
+      const endPosB = positionsB[n + 1][0];
+
+      if(intersects(startPosA, endPosA, startPosB, endPosB)) {
+        const a_isVertical = startPosA[0] === endPosA[0];
+        const a_isHorizontal = startPosA[1] === endPosA[1];
+
+        const intersectPosX = a_isVertical ? startPosA[0] : startPosB[0];
+        const intersectPosY = a_isHorizontal ? startPosA[1] : startPosB[1];
+
+        const distance = Math.abs(intersectPosX) + Math.abs(intersectPosY);
+
+        const horizontalPathPosX = a_isVertical ? startPosB[0] : startPosA[0];
+        const verticalPathPosX = a_isHorizontal ? startPosB[1] : startPosA[1];
+
+        const stepsToIntersectX = Math.abs(horizontalPathPosX - intersectPosX);
+        const stepsToIntersectY = Math.abs(verticalPathPosX - intersectPosY);
+
+        const stepsA = positionsA[i][1];
+        const stepsB = positionsB[n][1];
+
+        const steps = stepsToIntersectX + stepsToIntersectY + stepsA + stepsB;
+
+        results.push([distance, steps]);
+      }
     }
   }
+
+  return results;
 }
 
-const part_1 = distances.sort((a, b) => a - b)[0];
+const intersections = getIntersections(pathsA, pathsB);
 
-console.log(part_1);
+const closest = intersections.sort((a,b) => a[0] - b[0])[0][0];
+const shortest = intersections.sort((a,b) => a[1] - b[1])[0][1];
+
+console.log(closest);
+console.log(shortest);
